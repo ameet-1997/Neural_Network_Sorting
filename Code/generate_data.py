@@ -39,8 +39,6 @@ def generate(args):
 def main(args):
 	generate(args)
 
-
-
 if __name__ == '__main__':
 	args = argparser()
 	main(args)
