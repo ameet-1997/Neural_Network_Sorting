@@ -12,8 +12,8 @@ class NeuralNetwork():
 		self.display_step = 1
 
 		# Placeholders representing input and expected output
-		self.input = tf.placeholder(tf.float32, shape=(None, self.args.n))
-		self.output = tf.placeholder(tf.float32, shape=(None, self.args.n))
+		self.input = tf.placeholder(tf.float32, shape=(None, self.args.n), name='Unsorted_Numbers')
+		self.output = tf.placeholder(tf.float32, shape=(None, self.args.n), name='Sorted_Numbers')
 		self.batch_size = self.args.batch_size
 
 		# Training and Test data
@@ -29,20 +29,21 @@ class NeuralNetwork():
 		output = model1(self.input, self.args.sizes)
 
 		# Build the loss
-		loss = self.loss(self.input,self.output)
+		loss = self.loss(output,self.output)
 
 		# Optimize
 		optimizer = tf.train.AdamOptimizer(learning_rate=self.args.lr).minimize(loss)
 
-		# Load the data
-		self.load_data()
+		# Initialize variables
+		sess = tf.Session()
+		sess.run(tf.global_variables_initializer())
 
 		for epoch in range(self.args.epochs):
 			# Load the batches
 			total_batch = int(len(self.train) / self.batch_size)
 			perm = np.random.permutation(self.train.shape[0])
-			x_batches = np.array_split(x_train[perm], total_batch)
-			y_batches = np.array_split(y_train[perm], total_batch)
+			x_batches = np.array_split(self.train[perm], total_batch)
+			y_batches = np.array_split(self.train_labels[perm], total_batch)
 
 			# Average loss
 			avg_loss = 0
@@ -50,13 +51,11 @@ class NeuralNetwork():
 			# Train
 			for b in range(total_batch):
 				feed_dict = {self.input:x_batches[b], self.output:y_batches[b]}
-				with tf.Session() as sess:
-					_, c = sess.run([optimizer, loss], feed_dict=feed_dict)
+				_, c = sess.run([optimizer, loss], feed_dict=feed_dict)
 
-					avg_loss += c / total_batch
+				avg_loss += c / total_batch
 			if epoch % self.display_step == 0:
-				print("Epoch:", '%04d' % (epoch+1), "cost=", \
-					"{:.9f}".format(avg_loss))
+				print("Epoch: %2d" % (epoch+1) + ", cost={:.9f}".format(avg_loss))
 
 	def loss(self, x, y):
 		return tf.reduce_mean(tf.squared_difference(x,y))
@@ -71,7 +70,7 @@ def comma_int_list(string):
 def argparser():
     Argparser = argparse.ArgumentParser()
     Argparser.add_argument('--n', type=int, default=5, help='Number of elements')
-    Argparser.add_argument('--sizes', type=comma_int_list, default=[50,50], help='Sizes of hidden layers')
+    Argparser.add_argument('--sizes', type=comma_int_list, default=[5,5], help='Sizes of hidden layers')
     Argparser.add_argument('--epochs', type=int, default=5, help='Number of epochs')
     Argparser.add_argument('--lr', type=float, default=0.001, help='Learning Rate')
     Argparser.add_argument('--batch_size', type=int, default=32, help='Batch Size')
@@ -84,7 +83,6 @@ def argparser():
 def main(args):
 	# Instantiate an object
 	nn = NeuralNetwork(args)
-	print(nn.train.shape)
 	nn.train_model()
 
 if __name__ == '__main__':
